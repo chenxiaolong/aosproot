@@ -38,11 +38,9 @@ For patching existing/prebuilt firmware, see [avbroot](https://github.com/chenxi
     source build/envsetup.sh
     ```
 
-4. Symlink or copy the Magisk APK into `vendor/aosproot/magisk.apk`.
+4. Copy the Magisk APK into `vendor/aosproot/magisk.apk`. A symlink also works, though it makes the AOSP build less reproducible.
 
     ```bash
-    ln -s /path/to/magisk.apk vendor/aosproot/magisk.apk
-    # OR
     cp /path/to/magisk.apk vendor/aosproot/magisk.apk
     ```
 
