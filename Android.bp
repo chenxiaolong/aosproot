@@ -1,0 +1,29 @@
+license {
+    name: "aosproot-GPL-3.0",
+    package_name: "aosproot",
+    license_kinds: ["SPDX-license-identifier-GPL-3.0"],
+    license_text: ["LICENSE"],
+}
+
+package {
+    default_applicable_licenses: ["aosproot-GPL-3.0"],
+}
+
+python_binary_host {
+    name: "aosproot",
+    version: {
+        py3: {
+            embedded_launcher: true,
+        },
+    },
+    srcs: [
+        "aosproot.py",
+    ],
+}
+
+// Hack to make the Magisk APK available to the build system
+prebuilt_build_tool {
+    name: "aosproot_magisk_apk",
+    export_to_make_var: "AOSPROOT_MAGISK_APK",
+    src: "magisk.apk",
+}

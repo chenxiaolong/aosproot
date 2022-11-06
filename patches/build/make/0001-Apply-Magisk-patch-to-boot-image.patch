@@ -1,0 +1,80 @@
+From 695ee81272a8c7060a60ccf1af0dda27418b7f1f Mon Sep 17 00:00:00 2001
+From: Andrew Gunnerson <chillermillerlong@hotmail.com>
+Date: Sat, 5 Nov 2022 23:09:23 -0400
+Subject: [PATCH] Apply Magisk patch to boot image
+
+This will use the `init_boot` image if available (for devices launching
+with Android 13). Otherwise, it falls back to the `boot` image.
+
+The Magisk patch is applied prior to the image being passed to avbtool
+for signing.
+
+Signed-off-by: Andrew Gunnerson <chillermillerlong@hotmail.com>
+---
+ core/Makefile                 |  2 ++
+ tools/releasetools/Android.bp |  1 +
+ tools/releasetools/common.py  | 16 ++++++++++++++++
+ 3 files changed, 19 insertions(+)
+
+diff --git a/core/Makefile b/core/Makefile
+index 31586e472..b2e33264c 100644
+--- a/core/Makefile
++++ b/core/Makefile
+@@ -5682,6 +5682,7 @@ endif
+ # Depending on the various images guarantees that the underlying
+ # directories are up-to-date.
+ $(BUILT_TARGET_FILES_PACKAGE): \
++	    $(AOSPROOT_MAGISK_APK) \
+ 	    $(INSTALLED_RADIOIMAGE_TARGET) \
+ 	    $(INSTALLED_RECOVERYIMAGE_TARGET) \
+ 	    $(INSTALLED_CACHEIMAGE_TARGET) \
+@@ -6118,6 +6119,7 @@ ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
+ 	$(call dump-dynamic-partitions-info, $(zip_root)/META/dynamic_partitions_info.txt)
+ endif
+ 	PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH MKBOOTIMG=$(MKBOOTIMG) \
++	    AOSPROOT_MAGISK_APK=$(AOSPROOT_MAGISK_APK) \
+ 	    $(ADD_IMG_TO_TARGET_FILES) -a -v -p $(HOST_OUT) $(zip_root)
+ ifeq ($(BUILD_QEMU_IMAGES),true)
+ 	$(hide) AVBTOOL=$(AVBTOOL) $(MK_VBMETA_BOOT_KERNEL_CMDLINE_SH) $(zip_root)/IMAGES/vbmeta.img \
+diff --git a/tools/releasetools/Android.bp b/tools/releasetools/Android.bp
+index d8e34b7b3..5e5f7a331 100644
+--- a/tools/releasetools/Android.bp
++++ b/tools/releasetools/Android.bp
+@@ -301,6 +301,7 @@ python_defaults {
+     // TODO (b/140144201) Build imgdiff from releasetools_common
+     required: [
+         "aapt2",
++        "aosproot",
+         "boot_signer",
+         "brotli",
+         "bsdiff",
+diff --git a/tools/releasetools/common.py b/tools/releasetools/common.py
+index 418d8daa8..ff8295bd9 100644
+--- a/tools/releasetools/common.py
++++ b/tools/releasetools/common.py
+@@ -1711,6 +1711,22 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
+     img_unsigned.close()
+     img_keyblock.close()
+ 
++  if info_dict['init_boot'] == 'true':
++    magisk_partition = 'init_boot'
++  else:
++    magish_partition = 'boot'
++
++  if partition_name == magisk_partition:
++    RunAndCheckOutput([
++      'aosproot',
++      'patch_image',
++      '--input', img.name,
++      '--output', img.name,
++      # We require writing to the same file referenced by the img fd
++      '--non-atomic',
++      '--magisk', os.environ['AOSPROOT_MAGISK_APK'],
++    ])
++
+   # AVB: if enabled, calculate and add hash to boot.img or recovery.img.
+   if info_dict.get("avb_enable") == "true":
+     avbtool = info_dict["avb_avbtool"]
+-- 
+2.38.1
+

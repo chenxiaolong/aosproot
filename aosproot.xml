@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+    <remote name="chenxiaolong"
+            fetch="https://github.com/chenxiaolong/" />
+
+    <project path="vendor/aosproot"
+             name="aosproot"
+             remote="chenxiaolong"
+             revision="refs/heads/master" />
+</manifest>
