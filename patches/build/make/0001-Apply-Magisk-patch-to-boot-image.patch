@@ -1,4 +1,4 @@
-From 695ee81272a8c7060a60ccf1af0dda27418b7f1f Mon Sep 17 00:00:00 2001
+From f8671647d8c5f2aef3835db58d95ed7d2b580f17 Mon Sep 17 00:00:00 2001
 From: Andrew Gunnerson <chillermillerlong@hotmail.com>
 Date: Sat, 5 Nov 2022 23:09:23 -0400
 Subject: [PATCH] Apply Magisk patch to boot image
@@ -11,16 +11,26 @@ for signing.
 
 Signed-off-by: Andrew Gunnerson <chillermillerlong@hotmail.com>
 ---
- core/Makefile                 |  2 ++
+ core/Makefile                 |  5 +++++
  tools/releasetools/Android.bp |  1 +
- tools/releasetools/common.py  | 16 ++++++++++++++++
- 3 files changed, 19 insertions(+)
+ tools/releasetools/common.py  | 22 ++++++++++++++++++++++
+ 3 files changed, 28 insertions(+)
 
 diff --git a/core/Makefile b/core/Makefile
-index 31586e472..b2e33264c 100644
+index 31586e472..03b365737 100644
 --- a/core/Makefile
 +++ b/core/Makefile
-@@ -5682,6 +5682,7 @@ endif
+@@ -5111,6 +5111,9 @@ INTERNAL_OTATOOLS_PACKAGE_FILES += \
+   $(sort $(shell find external/vboot_reference/tests/devkeys -type f))
+ endif
+ 
++INTERNAL_OTATOOLS_PACKAGE_FILES += \
++  vendor/aosproot/magisk.apk
++
+ # Factory images
+ INTERNAL_OTATOOLS_PACKAGE_FILES += \
+   device/common/clear-factory-images-variables.sh \
+@@ -5682,6 +5685,7 @@ endif
  # Depending on the various images guarantees that the underlying
  # directories are up-to-date.
  $(BUILT_TARGET_FILES_PACKAGE): \
@@ -28,7 +38,7 @@ index 31586e472..b2e33264c 100644
  	    $(INSTALLED_RADIOIMAGE_TARGET) \
  	    $(INSTALLED_RECOVERYIMAGE_TARGET) \
  	    $(INSTALLED_CACHEIMAGE_TARGET) \
-@@ -6118,6 +6119,7 @@ ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
+@@ -6118,6 +6122,7 @@ ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
  	$(call dump-dynamic-partitions-info, $(zip_root)/META/dynamic_partitions_info.txt)
  endif
  	PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH MKBOOTIMG=$(MKBOOTIMG) \
@@ -49,10 +59,10 @@ index d8e34b7b3..5e5f7a331 100644
          "brotli",
          "bsdiff",
 diff --git a/tools/releasetools/common.py b/tools/releasetools/common.py
-index 418d8daa8..ff8295bd9 100644
+index 418d8daa8..0e29bc9e1 100644
 --- a/tools/releasetools/common.py
 +++ b/tools/releasetools/common.py
-@@ -1711,6 +1711,22 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
+@@ -1711,6 +1711,28 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
      img_unsigned.close()
      img_keyblock.close()
  
@@ -62,6 +72,12 @@ index 418d8daa8..ff8295bd9 100644
 +    magish_partition = 'boot'
 +
 +  if partition_name == magisk_partition:
++    magisk = os.getenv('AOSPROOT_MAGISK_APK')
++    if magisk is None:
++      # If unset, this is likely running from an otatools package
++      magisk = os.path.join(os.path.dirname(sys.path[0]),
++                            '..', 'vendor', 'aosproot', 'magisk.apk')
++
 +    RunAndCheckOutput([
 +      'aosproot',
 +      'patch_image',
@@ -69,7 +85,7 @@ index 418d8daa8..ff8295bd9 100644
 +      '--output', img.name,
 +      # We require writing to the same file referenced by the img fd
 +      '--non-atomic',
-+      '--magisk', os.environ['AOSPROOT_MAGISK_APK'],
++      '--magisk', magisk,
 +    ])
 +
    # AVB: if enabled, calculate and add hash to boot.img or recovery.img.
