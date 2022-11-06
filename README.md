@@ -14,6 +14,8 @@ For patching existing/prebuilt firmware, see [avbroot](https://github.com/chenxi
 
     * The `Direct install` method for updating Magisk. Magisk updates must be done by building a new firmware image and flashing the corresponding OTA.
 
+* Only the latest version of AOSP is supported (13 at this time). There is no plan to support older AOSP versions.
+
 ### Usage
 
 1. Place [`aosproot.xml`](./aosproot.xml) in `.repo/local_manifests/` at the root of the AOSP source code.
