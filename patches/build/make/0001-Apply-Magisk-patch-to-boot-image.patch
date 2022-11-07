@@ -69,7 +69,7 @@ index 418d8daa8..0e29bc9e1 100644
 +  if info_dict['init_boot'] == 'true':
 +    magisk_partition = 'init_boot'
 +  else:
-+    magish_partition = 'boot'
++    magisk_partition = 'boot'
 +
 +  if partition_name == magisk_partition:
 +    magisk = os.getenv('AOSPROOT_MAGISK_APK')
