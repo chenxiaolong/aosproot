@@ -59,7 +59,7 @@ index d8e34b7b3..5e5f7a331 100644
          "brotli",
          "bsdiff",
 diff --git a/tools/releasetools/common.py b/tools/releasetools/common.py
-index 418d8daa8..0e29bc9e1 100644
+index 418d8daa8..235242082 100644
 --- a/tools/releasetools/common.py
 +++ b/tools/releasetools/common.py
 @@ -1711,6 +1711,28 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
