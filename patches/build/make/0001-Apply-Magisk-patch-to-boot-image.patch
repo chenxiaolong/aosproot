@@ -1,15 +1,6 @@
-From f8671647d8c5f2aef3835db58d95ed7d2b580f17 Mon Sep 17 00:00:00 2001
-From: Andrew Gunnerson <chillermillerlong@hotmail.com>
-Date: Sat, 5 Nov 2022 23:09:23 -0400
-Subject: [PATCH] Apply Magisk patch to boot image
+From: Your Name <your.email@example.com>
+Subject: [PATCH] Add Magisk to AOSP build system
 
-This will use the `init_boot` image if available (for devices launching
-with Android 13). Otherwise, it falls back to the `boot` image.
-
-The Magisk patch is applied prior to the image being passed to avbtool
-for signing.
-
-Signed-off-by: Andrew Gunnerson <chillermillerlong@hotmail.com>
 ---
  core/Makefile                 |  5 +++++
  tools/releasetools/Android.bp |  1 +
@@ -23,7 +14,7 @@ index 31586e472..03b365737 100644
 @@ -5111,6 +5111,9 @@ INTERNAL_OTATOOLS_PACKAGE_FILES += \
    $(sort $(shell find external/vboot_reference/tests/devkeys -type f))
  endif
- 
+
 +INTERNAL_OTATOOLS_PACKAGE_FILES += \
 +  vendor/aosproot/magisk.apk
 +
@@ -34,18 +25,18 @@ index 31586e472..03b365737 100644
  # Depending on the various images guarantees that the underlying
  # directories are up-to-date.
  $(BUILT_TARGET_FILES_PACKAGE): \
-+	    $(AOSPROOT_MAGISK_APK) \
- 	    $(INSTALLED_RADIOIMAGE_TARGET) \
- 	    $(INSTALLED_RECOVERYIMAGE_TARGET) \
- 	    $(INSTALLED_CACHEIMAGE_TARGET) \
++           $(AOSPROOT_MAGISK_APK) \
+            $(INSTALLED_RADIOIMAGE_TARGET) \
+            $(INSTALLED_RECOVERYIMAGE_TARGET) \
+            $(INSTALLED_CACHEIMAGE_TARGET) \
 @@ -6118,6 +6122,7 @@ ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
- 	$(call dump-dynamic-partitions-info, $(zip_root)/META/dynamic_partitions_info.txt)
+        $(call dump-dynamic-partitions-info, $(zip_root)/META/dynamic_partitions_info.txt)
  endif
- 	PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH MKBOOTIMG=$(MKBOOTIMG) \
-+	    AOSPROOT_MAGISK_APK=$(AOSPROOT_MAGISK_APK) \
- 	    $(ADD_IMG_TO_TARGET_FILES) -a -v -p $(HOST_OUT) $(zip_root)
+        PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH MKBOOTIMG=$(MKBOOTIMG) \
++           AOSPROOT_MAGISK_APK=$(AOSPROOT_MAGISK_APK) \
+            $(ADD_IMG_TO_TARGET_FILES) -a -v -p $(HOST_OUT) $(zip_root)
  ifeq ($(BUILD_QEMU_IMAGES),true)
- 	$(hide) AVBTOOL=$(AVBTOOL) $(MK_VBMETA_BOOT_KERNEL_CMDLINE_SH) $(zip_root)/IMAGES/vbmeta.img \
+        $(hide) AVBTOOL=$(AVBTOOL) $(MK_VBMETA_BOOT_KERNEL_CMDLINE_SH) $(zip_root)/IMAGES/vbmeta.img \
 diff --git a/tools/releasetools/Android.bp b/tools/releasetools/Android.bp
 index d8e34b7b3..5e5f7a331 100644
 --- a/tools/releasetools/Android.bp
@@ -65,7 +56,7 @@ index 418d8daa8..235242082 100644
 @@ -1711,6 +1711,28 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
      img_unsigned.close()
      img_keyblock.close()
- 
+
 +  if info_dict['init_boot'] == 'true':
 +    magisk_partition = 'init_boot'
 +  else:
@@ -74,23 +65,21 @@ index 418d8daa8..235242082 100644
 +  if partition_name == magisk_partition:
 +    magisk = os.getenv('AOSPROOT_MAGISK_APK')
 +    if magisk is None:
-+      # If unset, this is likely running from an otatools package
++      # If +      # If unset, this is likely running from an otatools package
 +      magisk = os.path.join(os.path.dirname(sys.path[0]),
 +                            '..', 'vendor', 'aosproot', 'magisk.apk')
 +
 +    RunAndCheckOutput([
 +      'aosproot',
-+      'patch_image',
-+      '--input', img.name,
-+      '--output', img.name,
-+      # We require writing to the same file referenced by the img fd
-+      '--non-atomic',
++      '--input', img_signed.name,
++      '--output', output_image.name,
 +      '--magisk', magisk,
 +    ])
 +
-   # AVB: if enabled, calculate and add hash to boot.img or recovery.img.
-   if info_dict.get("avb_enable") == "true":
-     avbtool = info_dict["avb_avbtool"]
--- 
-2.38.1
-
++    img_signed.close()
++    output_image.close()
++    os.unlink(img_signed.name)
++    os.rename(output_image.name, output_image_path)
++  else:
++    img_signed.close()
++    os.rename(img_signed.name, output_image_path)
