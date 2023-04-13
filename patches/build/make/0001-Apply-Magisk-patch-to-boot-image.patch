@@ -1,27 +1,20 @@
-From: Your Name <your.email@example.com>
+From: Shaun Mulligan <switchflip.shaun@gmail.com>
 Subject: [PATCH] Add Magisk to AOSP build system
 
----
- core/Makefile                 |  5 +++++
- tools/releasetools/Android.bp |  1 +
- tools/releasetools/common.py  | 22 ++++++++++++++++++++++
- 3 files changed, 28 insertions(+)
-
 diff --git a/core/Makefile b/core/Makefile
-index 31586e472..03b365737 100644
+index c19b0754a..2db30e232 100644
 --- a/core/Makefile
 +++ b/core/Makefile
-@@ -5111,6 +5111,9 @@ INTERNAL_OTATOOLS_PACKAGE_FILES += \
+@@ -5152,6 +5152,8 @@ ifeq (true,$(PRODUCT_SUPPORTS_VBOOT))
+ INTERNAL_OTATOOLS_PACKAGE_FILES += \
    $(sort $(shell find external/vboot_reference/tests/devkeys -type f))
  endif
-
 +INTERNAL_OTATOOLS_PACKAGE_FILES += \
 +  vendor/aosproot/magisk.apk
-+
- # Factory images
- INTERNAL_OTATOOLS_PACKAGE_FILES += \
-   device/common/clear-factory-images-variables.sh \
-@@ -5682,6 +5685,7 @@ endif
+ 
+ INTERNAL_OTATOOLS_RELEASETOOLS := \
+   $(sort $(shell find build/make/tools/releasetools -name "*.pyc" -prune -o \
+@@ -5723,6 +5725,7 @@ endif
  # Depending on the various images guarantees that the underlying
  # directories are up-to-date.
  $(BUILT_TARGET_FILES_PACKAGE): \
@@ -29,7 +22,7 @@ index 31586e472..03b365737 100644
             $(INSTALLED_RADIOIMAGE_TARGET) \
             $(INSTALLED_RECOVERYIMAGE_TARGET) \
             $(INSTALLED_CACHEIMAGE_TARGET) \
-@@ -6118,6 +6122,7 @@ ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
+@@ -6172,6 +6175,7 @@ ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
         $(call dump-dynamic-partitions-info, $(zip_root)/META/dynamic_partitions_info.txt)
  endif
         PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH MKBOOTIMG=$(MKBOOTIMG) \
@@ -50,13 +43,13 @@ index d8e34b7b3..5e5f7a331 100644
          "brotli",
          "bsdiff",
 diff --git a/tools/releasetools/common.py b/tools/releasetools/common.py
-index 418d8daa8..235242082 100644
+index af66122f5..db6859383 100644
 --- a/tools/releasetools/common.py
 +++ b/tools/releasetools/common.py
-@@ -1711,6 +1711,28 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
+@@ -1723,6 +1723,28 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
      img_unsigned.close()
      img_keyblock.close()
-
+ 
 +  if info_dict['init_boot'] == 'true':
 +    magisk_partition = 'init_boot'
 +  else:
@@ -65,21 +58,20 @@ index 418d8daa8..235242082 100644
 +  if partition_name == magisk_partition:
 +    magisk = os.getenv('AOSPROOT_MAGISK_APK')
 +    if magisk is None:
-+      # If +      # If unset, this is likely running from an otatools package
++      # If unset, this is likely running from an otatools package
 +      magisk = os.path.join(os.path.dirname(sys.path[0]),
 +                            '..', 'vendor', 'aosproot', 'magisk.apk')
 +
 +    RunAndCheckOutput([
 +      'aosproot',
-+      '--input', img_signed.name,
-+      '--output', output_image.name,
++      'patch_image',
++      '--input', img.name,
++      '--output', img.name,
++      # We require writing to the same file referenced by the img fd
++      '--non-atomic',
 +      '--magisk', magisk,
 +    ])
 +
-+    img_signed.close()
-+    output_image.close()
-+    os.unlink(img_signed.name)
-+    os.rename(output_image.name, output_image_path)
-+  else:
-+    img_signed.close()
-+    os.rename(img_signed.name, output_image_path)
+   # AVB: if enabled, calculate and add hash to boot.img or recovery.img.
+   if info_dict.get("avb_enable") == "true":
+     avbtool = info_dict["avb_avbtool"]
