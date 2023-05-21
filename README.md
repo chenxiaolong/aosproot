@@ -1,3 +1,5 @@
+NOTE: This repo was just a proof of concept and I currently don't intend to keep it up to date with AOSP and Magisk changes as I don't personally use it.
+
 # aosproot
 
 aosproot is a simple way to apply the Magisk boot image patch as part of the AOSP build. This allows building a rooted custom firmware, while preserving AVB (Android Verified Boot).
